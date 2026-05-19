@@ -19,8 +19,10 @@ def create_book_service():
     book_filter_service = ...
     return BookService(repository, book_filter_service)
     """
-    pass
-
+    repo = InMemoryBookRepository()
+    book_filter_service = BookFilterService()
+    inst = BookStoreService(repo, book_filter_service)
+    return inst
 
 # TODO: Create a fixture that returns a sample book for testing
 def create_sample_book():
@@ -32,7 +34,8 @@ def create_sample_book():
     REQUIREMENTS:
     - Book should have valid, testable attributes
     """
-    pass
+    b = Book(title="Mogley", author="J.K. Rowling", genre="SF", price=13.44)
+    return b
 
 
 # INFO: For the following tests, use only the BookService instance created by the fixture
@@ -51,7 +54,11 @@ def test_add_book():
     - Verify ID is automatically assigned
     """
     # Your implementation here
-    pass
+    new_book_service = create_book_service()
+    new_book = create_sample_book()
+    new_book_service.add_book(new_book)
+    assert new_book.id is not None
+    assert new_book_service.get_book_by_id(new_book.id) == new_book
 
 
 def test_add_book_validation():
@@ -69,11 +76,18 @@ def test_add_book_validation():
     - Use pytest.raises() to check for exceptions
     """
     # Your implementation here
-    pass
-
+    # with pytest.raises():
+    new_book_service = create_book_service()
+    with pytest.raises(ValueError):
+        empty_title_b = Book(title="", author="J.K. Rowling", genre="SF", price=13.44)
+        new_book_service.add_book(empty_title_b)
+    with pytest.raises(ValueError):
+        empty_author_b = Book(title="Mogley", author="", genre="SF", price=13.49)
+        new_book_service.add_book(empty_author_b)
 
 # INFO: Here you should use @pytest.mark.parametrize to test multiple genres
-def test_get_books_by_genre():
+@pytest.mark.parametrize("genre, length", [("SF", 4), ("drama", 2)])
+def test_get_books_by_genre(genre, length):
     """
     TESTING OBJECTIVES:
     1. Add multiple books with different genres
@@ -91,11 +105,31 @@ def test_get_books_by_genre():
     - Check length and genre of returned books
     """
     # Your implementation here
-    pass
+    new_book_service = create_book_service()
 
+    book1 = Book(title="Mogley", author="J.K. Rowling", genre="SF", price=13.44)
+    book2 = Book(title="Spider Man", author="Marvel", genre="SF", price=16.50)
+    book3 = Book(title="Lord of the rings", author="J.R.R.T.", genre="SF", price=12.99)
+    book4 = Book(title="si maine e o zi...", author="R. Diana", genre="drama", price=17.34)
+    book5 = Book(title="Learn how to love again", author="Martin Luthor", genre="drama", price=16.79)
+    book6 = Book(title="Game of Thrones", author="G.R.R.M.", genre="SF", price=16.98)
 
+    new_book_service.add_book(book1)
+    new_book_service.add_book(book2)
+    new_book_service.add_book(book3)
+    new_book_service.add_book(book4)
+    new_book_service.add_book(book5)
+    new_book_service.add_book(book6)
+
+    SFs = new_book_service.get_books(genre=genre)
+    assert len(SFs) == length
+
+    # dramas = new_book_service.get_books(genre="drama")
+    # assert len(dramas) == 2
+    
 # INFO: Here you should use @pytest.mark.parametrize to test multiple price ranges
-def test_price_range_filtering():
+@pytest.mark.parametrize("range, output", [((13, 14), 1), ((16.50, 17.50), 4), ((16.70, 16.99), 2)])
+def test_price_range_filtering(range: tuple, output):
     """
     TESTING OBJECTIVES:
     1. Add books at different price points
@@ -114,8 +148,24 @@ def test_price_range_filtering():
     - Test edge cases and different price combinations
     """
     # Your implementation here
-    pass
+    new_book_service = create_book_service()
 
+    book1 = Book(title="Mogley", author="J.K. Rowling", genre="SF", price=13.44)
+    book2 = Book(title="Spider Man", author="Marvel", genre="SF", price=16.50)
+    book3 = Book(title="Lord of the rings", author="J.R.R.T.", genre="SF", price=12.99)
+    book4 = Book(title="si maine e o zi...", author="R. Diana", genre="drama", price=17.34)
+    book5 = Book(title="Learn how to love again", author="Martin Luthor", genre="drama", price=16.79)
+    book6 = Book(title="Game of Thrones", author="G.R.R.M.", genre="SF", price=16.98)
+
+    new_book_service.add_book(book1)
+    new_book_service.add_book(book2)
+    new_book_service.add_book(book3)
+    new_book_service.add_book(book4)
+    new_book_service.add_book(book5)
+    new_book_service.add_book(book6)
+
+    list_of_books = new_book_service.get_books(min_price=range[0], max_price=range[1])
+    assert len(list_of_books) == output
 
 def test_update_book():
     """
@@ -136,8 +186,19 @@ def test_update_book():
     - Compare book before and after update
     """
     # Your implementation here
-    pass
+    new_book_service = create_book_service()
+    book1 = Book(title="Mogley", author="J.K. Rowling", genre="SF", price=13.44)
+    new_book_service.add_book(book1)
 
+    book1.genre = "drama"
+    assert book1.genre == "drama"
+    assert book1.price == 13.44
+    assert book1.title == "Mogley"
+
+    book1.author = "Mickey Mouse"
+    assert book1.author == "Mickey Mouse"
+    assert book1.price == 13.44
+    assert book1.title == "Mogley"
 
 def test_remove_book():
     """
@@ -158,4 +219,10 @@ def test_remove_book():
     - Verify book is no longer in the service
     """
     # Your implementation here
-    pass
+    new_book_service = create_book_service()
+    book1 = Book(title="Mogley", author="J.K. Rowling", genre="SF", price=13.44)
+    new_book_service.add_book(book1)
+
+    new_book_service.remove_book(book1.id)
+    assert len(new_book_service.get_books()) == 0
+    assert new_book_service.get_book_by_id(book1.id) == None
